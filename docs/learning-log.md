@@ -181,9 +181,70 @@ DATABASES = {
 ---
 
 ## Questions to Test Your Understanding
-1. **What is the difference between a Django Project and a Django App?**
+1. **What is the difference between a Django Project (`config/`) and a Django App (`expenses/`)?**
 2. **Why is `CorsMiddleware` placed at the very top of the `MIDDLEWARE` list in `settings/base.py`?**
 3. **Why is it critical in Django to configure a custom `User` model (`AUTH_USER_MODEL`) before running your first database migrations?**
 4. **How does `config/settings/development.py` inherit settings from `base.py`, and how does it load `.env`?**
 
+---
 
+# Milestone 04: Phase 3 — Database Modeling & Migrations
+
+## Concept
+1. **Relational Integrity with Django ORM:** Defining relational tables (`Category`, `Expense`) linked via `ForeignKey` to `settings.AUTH_USER_MODEL`.
+2. **Cascade Protection Policies (`on_delete=models.PROTECT`):** Preventing accidental orphaned records or accidental bulk deletion. If a user tries to delete a category that has 50 expenses attached, the database halts with `ProtectedError`.
+3. **Multi-Tenant Composite Constraints (`UniqueConstraint`):** Scoping constraints per user (`fields=['user', 'name']`), allowing User A and User B to both have a "Groceries" category, while preventing User A from creating duplicate "Groceries" categories.
+4. **Exact Decimal Precision (`DecimalField(max_digits=10, decimal_places=2)`):** Storing currency in PostgreSQL `NUMERIC(10, 2)` and computing totals in Python with `decimal.Decimal` to guarantee 100% accounting precision.
+5. **Composite B-Tree Indexes:** Adding an index on `(user, expense_date)` so queries filtering on user and sorting by date execute in $O(\log n)$ logarithmic time instead of scanning every table row ($O(n)$).
+
+---
+
+## Why
+* Financial applications cannot tolerate floating-point math errors or orphaned records.
+* Database-level constraints guarantee data integrity even if API bugs or script errors bypass application validations.
+
+---
+
+## How
+* In `backend/categories/models.py`, `Category` defines `models.UniqueConstraint(fields=['user', 'name'])`.
+* In `backend/expenses/models.py`, `Expense` defines `category = models.ForeignKey(..., on_delete=models.PROTECT)`.
+* Django converts these ORM declarations into SQL DDL commands via migration files (`0001_initial.py`).
+
+---
+
+## Implementation
+* **Category Model & Admin:** [backend/categories/models.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/categories/models.py) and [admin.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/categories/admin.py)
+* **Expense Model & Admin:** [backend/expenses/models.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/expenses/models.py) and [admin.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/expenses/admin.py)
+* **Category Unit Tests:** [backend/categories/tests.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/categories/tests.py)
+* **Expense Unit Tests:** [backend/expenses/tests.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/expenses/tests.py)
+* **Database Migrations:** `backend/categories/migrations/0001_initial.py` and `backend/expenses/migrations/0001_initial.py`
+
+---
+
+## Example
+### Expense Model Definition with Constraints & Indexes
+```python
+class Expense(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='expenses')
+    category = models.ForeignKey('categories.Category', on_delete=models.PROTECT, related_name='expenses')
+    amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    expense_date = models.DateField(default=timezone.now, db_index=True)
+    payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices, default=PaymentMethod.CASH)
+
+    class Meta:
+        ordering = ['-expense_date', '-created_at']
+        indexes = [
+            models.Index(fields=['user', 'expense_date'], name='exp_user_date_idx'),
+        ]
+        constraints = [
+            models.CheckConstraint(check=models.Q(amount__gt=0), name='positive_expense_amount')
+        ]
+```
+
+---
+
+## Questions to Test Your Understanding
+1. **What is the difference between `on_delete=models.CASCADE` and `on_delete=models.PROTECT`? Why is `PROTECT` essential for the `Category` foreign key on `Expense`?**
+2. **Why do we use `models.UniqueConstraint(fields=['user', 'name'])` instead of setting `name = models.CharField(unique=True)`?**
+3. **What is a database index, and why did we create a composite index on `(user, expense_date)`?**
+4. **How does Python's `Decimal('45.50')` prevent arithmetic drift compared to `45.50` (float)?**

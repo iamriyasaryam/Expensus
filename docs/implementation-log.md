@@ -140,4 +140,48 @@ The Implementation Log tracks all milestones, files created/modified, architectu
 ### Next Milestone
 * **Phase 3 — Database Modeling** (Implementing `Category` and `Expense` models with `DecimalField` precision, foreign keys, cascade rules, database indexes, and running migrations).
 
+---
+
+## Log Entry: Milestone 04 — Phase 3: Database Modeling & Migrations
+
+* **Date:** 2026-08-28
+* **Milestone:** Phase 3 — Database Modeling & Migrations
+* **Goal:** Implement the relational data models for `Category` and `Expense` with exact `DecimalField(10, 2)` monetary handling, `PROTECT` cascade policies, multi-tenant composite unique constraints, date indexing, admin registration, unit testing, and migration execution.
+
+### Files Created / Modified
+* `backend/categories/models.py` — Implemented `Category` model with user FK and `UniqueConstraint(fields=['user', 'name'])`.
+* `backend/categories/admin.py` — Admin configuration with search by name/email and created date filter.
+* `backend/categories/tests.py` — Unit tests for category creation, duplicate rejection per user, and cross-user category uniqueness.
+* `backend/expenses/models.py` — Implemented `Expense` model with `DecimalField(10, 2)`, `PaymentMethod` choices, `PROTECT` cascade on Category, check constraints, and composite indexes.
+* `backend/expenses/admin.py` — Admin configuration with date hierarchy and filter facets.
+* `backend/expenses/tests.py` — Unit tests for Decimal arithmetic, deletion protection, cross-user category validation, and ordering.
+* `backend/categories/migrations/0001_initial.py` — Initial Category table DDL migration.
+* `backend/expenses/migrations/0001_initial.py` — Initial Expense table DDL migration.
+* `docs/decisions.md` — Cleaned formatting.
+
+### Changes Made
+* Defined relational schema enforcing 1-to-many relationships (`User -> Category`, `User -> Expense`, `Category -> Expense`).
+* Guaranteed financial arithmetic safety using fixed-point `Decimal` representation.
+* Added composite database indexes `(user, expense_date)` to optimize temporal and aggregation queries.
+
+### Tests Performed
+* Ran migrations (`python backend/manage.py migrate`) -> Applied `categories.0001_initial` and `expenses.0001_initial`.
+* Executed automated test suite (`python backend/manage.py test categories expenses`) -> **All 10 tests passed (OK)** in 11.8s.
+
+### Problems Encountered & Solutions
+* *Problem 1:* In `ExpenseModelTests.test_delete_user_workflow`, calling `self.user1.delete()` while active expenses existed on a `PROTECT` category triggered `ProtectedError` during Django's cascade collection.
+* *Solution 1:* Clarified the deletion workflow: because `Category` is protected by `Expense`, user account teardown must clean up the user's expenses before deleting the user entity.
+* *Problem 2:* Passing an unsaved model instance (`self.user1` after `.delete()`) into a QuerySet filter raised `ValueError: Model instances passed to related filters must be saved`.
+* *Solution 2:* Filtered by `user_id` integer rather than the deleted Python in-memory instance.
+
+### Concepts Learned
+* Relational database modeling with Django ORM.
+* Cascade policies (`models.PROTECT` vs `models.CASCADE`).
+* Multi-tenant composite constraints.
+* Database index performance mechanics.
+
+### Next Milestone
+* **Phase 4 — Category REST API** (Implementing Category serializers, `CategoryViewSet`, object-level permissions, URL routers, validation, and integration tests).
+
+
 
