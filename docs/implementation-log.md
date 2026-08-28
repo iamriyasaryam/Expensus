@@ -183,5 +183,48 @@ The Implementation Log tracks all milestones, files created/modified, architectu
 ### Next Milestone
 * **Phase 4 — Category REST API** (Implementing Category serializers, `CategoryViewSet`, object-level permissions, URL routers, validation, and integration tests).
 
+---
+
+## Log Entry: Milestone 05 — Phase 4: Category REST API
+
+* **Date:** 2026-08-28
+* **Milestone:** Phase 4 — Category REST API
+* **Goal:** Implement the complete Category REST API (`/api/categories/`) with serializers, ViewSets, zero-trust user ownership enforcement, cascade deletion error handling (`ProtectedError` -> `400 Bad Request`), URL routing, and end-to-end integration testing.
+
+### Files Created / Modified
+* `backend/categories/serializers.py` — Implemented `CategorySerializer` with whitespace trimming and case-insensitive uniqueness validation scoped to the authenticated user.
+* `backend/categories/views.py` — Implemented `CategoryViewSet` overriding `get_queryset()` (user isolation), `perform_create()` (auto-injecting user), and `destroy()` (graceful `ProtectedError` interception).
+* `backend/categories/urls.py` — Configured DRF `DefaultRouter` registering `/api/categories/`.
+* `backend/categories/tests.py` — Added 11 comprehensive API integration tests with `APITestCase` testing permissions, CRUD actions, tenant isolation, and deletion protection.
+
+### Changes Made
+* Created RESTful endpoints for Category CRUD:
+  * `GET /api/categories/` (list user categories)
+  * `POST /api/categories/` (create new category)
+  * `GET /api/categories/{id}/` (retrieve category)
+  * `PATCH /api/categories/{id}/` (update category)
+  * `DELETE /api/categories/{id}/` (delete category or return 400 protected error)
+* Guaranteed zero-trust user ownership: client cannot access or manipulate other users' categories.
+
+### Tests Performed
+* Ran test suite (`python backend/manage.py test categories expenses`) -> **All 21 tests passed (OK)** in 24.2s.
+* Verified 401 Unauthorized for unauthenticated requests.
+* Verified 404 Not Found when User A attempts to access User B's category.
+* Verified 400 Bad Request when attempting to delete a category that contains active expenses.
+
+### Problems Encountered & Solutions
+* *Problem:* Standard DRF ModelViewSet `destroy()` bubbles unhandled `ProtectedError` as a 500 Internal Server Error when deleting a category with attached expenses.
+* *Solution:* Overrode `destroy()` to catch `ProtectedError` and return `HTTP 400 Bad Request` with structured JSON payload (`code: "category_protected"`).
+
+### Concepts Learned
+* DRF serialization and deserialization validation hooks.
+* ModelViewSet action dispatch and DefaultRouter mechanics.
+* Multi-tenant data scoping at the API layer.
+* API integration testing with `APITestCase` and `APIClient`.
+
+### Next Milestone
+* **Phase 5 — Expense REST API** (Implementing Expense serializers, `ExpenseViewSet`, `django-filter` integration for date ranges/categories/methods, search, ordering, pagination, and API tests).
+
+
 
 

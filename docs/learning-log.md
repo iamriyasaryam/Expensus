@@ -248,3 +248,76 @@ class Expense(models.Model):
 2. **Why do we use `models.UniqueConstraint(fields=['user', 'name'])` instead of setting `name = models.CharField(unique=True)`?**
 3. **What is a database index, and why did we create a composite index on `(user, expense_date)`?**
 4. **How does Python's `Decimal('45.50')` prevent arithmetic drift compared to `45.50` (float)?**
+
+---
+
+# Milestone 05: Phase 4 — Category REST API
+
+## Concept
+1. **DRF Serializers (Serialization & Deserialization):** Translating database model instances into JSON representations for client consumption, and validating client-submitted payloads against schema rules and uniqueness constraints before persistence.
+2. **ModelViewSet & DefaultRouter Dispatch:** Combining standard REST actions (`list`, `create`, `retrieve`, `update`, `partial_update`, `destroy`) into a single view class wired automatically via URL routing.
+3. **Zero-Trust User Ownership:**
+   * `get_queryset()`: Enforces that `GET /api/categories/` filters rows to `user=request.user`.
+   * `perform_create(serializer)`: Programmatically injects `user=request.user`, guaranteeing the frontend cannot forge ownership.
+4. **Graceful Exception Interception:** Catching database-level `ProtectedError` in the `destroy()` method to return a clear, user-friendly `400 Bad Request` JSON payload rather than crashing with an unhandled 500 internal server error.
+5. **API Integration Testing with `APITestCase`:** Using `APIClient` and `force_authenticate` to test endpoint security, permissions, status codes, and cross-tenant access isolation.
+
+---
+
+## Why
+* Category management is the prerequisite domain for recording and organizing expenses.
+* Without server-enforced scoping, malicious users could view or delete other users' categories by guessing IDs in the URL.
+* Without catching `ProtectedError`, users attempting to delete categories with active transactions would experience broken UI states and uninformative 500 error pages.
+
+---
+
+## How
+* `CategorySerializer` strips whitespace and performs case-insensitive duplicate checks scoped to `request.user`.
+* `CategoryViewSet` inherits from `viewsets.ModelViewSet` and sets `permission_classes = [IsAuthenticated]`.
+* In `destroy()`, `self.perform_destroy(instance)` is wrapped in `try...except ProtectedError`.
+
+---
+
+## Implementation
+* **Category Serializer:** [backend/categories/serializers.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/categories/serializers.py)
+* **Category ViewSet:** [backend/categories/views.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/categories/views.py)
+* **URL Router:** [backend/categories/urls.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/categories/urls.py)
+* **Category API Tests:** [backend/categories/tests.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/categories/tests.py)
+
+---
+
+## Example
+### Category ViewSet with Multi-Tenancy & Protected Deletion Handling
+```python
+class CategoryViewSet(viewsets.ModelViewSet):
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Multi-tenant isolation:
+        return Category.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        # Auto-inject verified user:
+        serializer.save(user=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ProtectedError:
+            return Response(
+                {"detail": "Cannot delete category containing active expenses.", "code": "category_protected"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+```
+
+---
+
+## Questions to Test Your Understanding
+1. **What is the difference between `get_queryset()` and `perform_create()` in a DRF `ModelViewSet`?**
+2. **Why does the frontend never send `user_id` in the `POST /api/categories/` request payload?**
+3. **What HTTP status code is returned when a category is successfully deleted, and what status code is returned if deletion is blocked by `ProtectedError`?**
+4. **Why does User A querying `GET /api/categories/99/` (which belongs to User B) receive `404 Not Found` instead of `200 OK`?**
+
