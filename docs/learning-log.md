@@ -122,3 +122,68 @@ services:
 3. **In `docker-compose.yml`, why does the backend container connect to PostgreSQL using `DB_HOST=db` instead of `DB_HOST=localhost`?**
 4. **What is a Docker persistent volume, and what would happen to our database data if we stopped our PostgreSQL container without one?**
 
+---
+
+# Milestone 03: Phase 2 — Backend Foundation
+
+## Concept
+1. **Django Project vs. Django App:**
+   * **Project (`config/`):** The administrative root and configuration orchestrator (contains `settings/`, `urls.py`, `wsgi.py`, and `asgi.py`).
+   * **App (`users`, `categories`, `expenses`, `analytics`):** Modular, self-contained Python packages each encapsulating a single business domain with its own models, serializers, views, and routing.
+2. **Split-Settings Architecture:** Decoupling settings into `base.py` (shared framework configuration, apps, middleware, DRF & JWT defaults), `development.py` (local database, verbose logging, live CORS origins), and `production.py` (strict SSL, HSTS, WhiteNoise, connection pooling).
+3. **WSGI (Web Server Gateway Interface):** The synchronous standard specification allowing web servers (e.g. Gunicorn) to communicate with Python web applications.
+4. **Middleware Execution Pipeline:** An ordered sequence of hooks processed on every request and response (e.g. `CorsMiddleware` runs first to handle cross-origin preflight `OPTIONS` requests before authentication occurs).
+5. **Early Custom User Model Setup:** Why Django requires defining `AUTH_USER_MODEL` before initial migrations are applied to avoid circular dependency and migration table corruption.
+
+---
+
+## Why
+* Monolithic `settings.py` files mix development keys with production secrets and make testing fragile.
+* Decoupled domain apps prevent tight coupling, making the codebase clean, maintainable, and testable.
+* Centralized DRF and SimpleJWT settings enforce uniform token lifetimes, authentication schemes, and pagination across all endpoints.
+
+---
+
+## How
+* `manage.py` and `wsgi.py` point `DJANGO_SETTINGS_MODULE` to `config.settings.development`.
+* `config/settings/development.py` imports `from .base import *` and loads environment variables dynamically via `python-dotenv`.
+* Root `config/urls.py` delegates URL namespaces to domain apps via `django.urls.include()`.
+
+---
+
+## Implementation
+* **Settings Package:** [backend/config/settings/base.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/config/settings/base.py), [development.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/config/settings/development.py), [production.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/config/settings/production.py)
+* **Root Routing & Entrypoints:** [backend/config/urls.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/config/urls.py), [wsgi.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/config/wsgi.py), [manage.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/manage.py)
+* **Domain App Configurations:** [users/apps.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/users/apps.py), [categories/apps.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/categories/apps.py), [expenses/apps.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/expenses/apps.py), [analytics/apps.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/analytics/apps.py)
+* **Custom User Model Baseline:** [users/models.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/users/models.py) and [users/admin.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/users/admin.py)
+
+---
+
+## Example
+### Split-Settings Inheritance Pattern
+```python
+# In config/settings/development.py:
+from .base import *          # Inherits DRF, JWT, INSTALLED_APPS, Middleware
+from dotenv import load_dotenv
+
+load_dotenv(BASE_DIR.parent / '.env')
+
+DEBUG = True
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'expensus_db'),
+        ...
+    }
+}
+```
+
+---
+
+## Questions to Test Your Understanding
+1. **What is the difference between a Django Project and a Django App?**
+2. **Why is `CorsMiddleware` placed at the very top of the `MIDDLEWARE` list in `settings/base.py`?**
+3. **Why is it critical in Django to configure a custom `User` model (`AUTH_USER_MODEL`) before running your first database migrations?**
+4. **How does `config/settings/development.py` inherit settings from `base.py`, and how does it load `.env`?**
+
+

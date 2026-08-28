@@ -91,3 +91,53 @@ The Implementation Log tracks all milestones, files created/modified, architectu
 ### Next Milestone
 * **Phase 2 — Backend Foundation** (Python virtual environment, Django project initialization, DRF setup, split settings architecture `base.py`/`development.py`, PostgreSQL database connection configuration).
 
+---
+
+## Log Entry: Milestone 03 — Phase 2: Backend Foundation
+
+* **Date:** 2026-08-28
+* **Milestone:** Phase 2 — Backend Foundation
+* **Goal:** Initialize Python virtual environment, construct Django project root (`manage.py`, `wsgi.py`, `asgi.py`), build modular split-settings (`base.py`, `development.py`, `production.py`), configure Django REST Framework (DRF) and SimpleJWT, and register all domain apps (`users`, `categories`, `expenses`, `analytics`).
+
+### Files Created / Modified
+* `.env.example` — Added documentation for `USE_SQLITE` local testing toggle.
+* `backend/manage.py` — Django administrative command line entrypoint.
+* `backend/config/__init__.py`, `wsgi.py`, `asgi.py` — WSGI and ASGI web application entrypoints.
+* `backend/config/settings/__init__.py` — Modular settings package.
+* `backend/config/settings/base.py` — Core shared settings, DRF configuration, SimpleJWT tokens, password validators.
+* `backend/config/settings/development.py` — Development settings loading `.env`, configuring database, CORS origins, and logging.
+* `backend/config/settings/production.py` — Production settings with security headers, WhiteNoise, and connection pooling.
+* `backend/config/urls.py` — Root URL dispatcher including health check and domain app includes.
+* `backend/users/` — Initialized `apps.py`, custom `User` model (`AbstractBaseUser`), `CustomUserManager`, `admin.py`, initial migration (`0001_initial.py`).
+* `backend/categories/` — Initialized `apps.py`, `urls.py`, `models.py`, `views.py`.
+* `backend/expenses/` — Initialized `apps.py`, `urls.py`, `models.py`, `views.py`.
+* `backend/analytics/` — Initialized `apps.py`, `urls.py`, `views.py`.
+
+### Changes Made
+* Created `.venv` virtual environment with Python 3.13.5 and installed all dependencies from `requirements.txt`.
+* Structured Django settings into a clean three-tier inheritance model (`base` -> `development` / `production`).
+* Created and verified root `/api/health/` monitoring endpoint.
+* Implemented the custom `User` model before initial migrations to ensure seamless authentication modeling.
+
+### Tests Performed
+* Ran `python backend/manage.py check` -> `System check identified no issues (0 silenced)`.
+* Applied initial migrations (`python manage.py migrate`) -> Success across `contenttypes`, `auth`, `users.0001_initial`, `admin`, `sessions`.
+* Executed HTTP GET test on `/api/health/` using Django Test Client -> Returned `HTTP 200 OK: {"status": "healthy", "service": "expensus-api"}`.
+* Ran `python backend/manage.py test` test suite -> Passed (0 errors).
+
+### Problems Encountered & Solutions
+* *Problem 1:* Initial `python manage.py check` reported `LookupError: App 'users' doesn't have a 'User' model` because `AUTH_USER_MODEL = 'users.User'` was configured in `base.py`.
+* *Solution 1:* Implemented the custom `User` model with `CustomUserManager` in `backend/users/models.py` before running initial migrations (aligning with Django best practices).
+* *Problem 2:* Django Test Client failed with `DisallowedHost: Invalid HTTP_HOST header: 'testserver'`.
+* *Solution 2:* Added `'testserver'` to `ALLOWED_HOSTS` in `development.py`.
+
+### Concepts Learned
+* Split-settings inheritance and environment configuration.
+* Custom user model architecture in Django.
+* Middleware execution order (CORS preflight handling).
+* URL routing and namespace delegation.
+
+### Next Milestone
+* **Phase 3 — Database Modeling** (Implementing `Category` and `Expense` models with `DecimalField` precision, foreign keys, cascade rules, database indexes, and running migrations).
+
+
