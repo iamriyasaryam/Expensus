@@ -1,0 +1,21 @@
+# ==============================================================================
+# Expensus — Backend Python Dependencies
+# ==============================================================================
+
+# Core Framework & REST API
+Django>=5.0,<5.2
+djangorestframework>=3.15.0
+
+# Authentication & Security
+djangorestframework-simplejwt>=5.3.0
+django-cors-headers>=4.3.0
+
+# Database & Filtering
+psycopg2-binary>=2.9.9
+django-filter>=24.0
+
+# Environment Management & Utilities
+python-dotenv>=1.0.1
+
+# Production WSGI Server
+gunicorn>=22.0.0

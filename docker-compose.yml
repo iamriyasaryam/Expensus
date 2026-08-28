@@ -1,0 +1,80 @@
+services:
+  # ----------------------------------------------------------------------------
+  # Database Service: PostgreSQL 16
+  # ----------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: expensus_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-expensus_db}
+      POSTGRES_USER: ${DB_USER:-expensus_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-expensus_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-expensus_user} -d ${DB_NAME:-expensus_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - expensus_net
+
+  # ----------------------------------------------------------------------------
+  # Backend Service: Django + Django REST Framework
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: expensus_backend
+    restart: unless-stopped
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - expensus_net
+
+  # ----------------------------------------------------------------------------
+  # Frontend Service: React + TypeScript + Vite
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: expensus_frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000/api}
+    depends_on:
+      - backend
+    networks:
+      - expensus_net
+
+# ------------------------------------------------------------------------------
+# Persistent Volumes & Network Topology
+# ------------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    name: expensus_postgres_data
+
+networks:
+  expensus_net:
+    name: expensus_network
+    driver: bridge
