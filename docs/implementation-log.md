@@ -47,3 +47,47 @@ The Implementation Log tracks all milestones, files created/modified, architectu
 
 ### Next Milestone
 * **Phase 1 — Repository & Development Environment Setup** (Git initialization, `.gitignore`, `.env.example`, Docker, Docker Compose setup for PostgreSQL and application containers).
+
+---
+
+## Log Entry: Milestone 02 — Phase 1: Repository & Development Environment Setup
+
+* **Date:** 2026-08-28
+* **Milestone:** Phase 1 — Repository & Development Environment Setup
+* **Goal:** Initialize Git version control, configure `.gitignore`, define environment templates (`.env.example`), create Docker Compose topology for PostgreSQL 16, and scaffold the modular application architecture.
+
+### Files Created / Modified
+* `.gitignore` — Production-grade ignore rules for Python, Django, Node, Vite, Docker, and environment files.
+* `.env.example` — Template documenting all required backend, database, and frontend environment variables.
+* `.env` — Local development environment file (strictly ignored by Git).
+* `docker-compose.yml` — Multi-container definition for `db` (PostgreSQL 16), `backend` (Django), and `frontend` (Vite) with persistent volumes and bridge network.
+* `backend/Dockerfile` — Multi-stage Python 3.11 container definition.
+* `backend/requirements.txt` — Core pinned dependencies (`Django`, `djangorestframework`, `simplejwt`, `django-filter`, `django-cors-headers`, `psycopg2-binary`, `python-dotenv`).
+* `frontend/Dockerfile` — Node 20 container definition for Vite development server.
+* `backend/config/`, `backend/users/`, `backend/categories/`, `backend/expenses/`, `backend/analytics/` — Scaffolding for backend domain apps.
+* `frontend/src/app/`, `frontend/src/features/...`, `frontend/src/components/...` — Scaffolding for frontend architecture.
+
+### Changes Made
+* Initialized empty Git repository on `master` branch.
+* Created initial commit (`bfed975`) tracking all scaffolding and configuration files.
+* Confirmed that `.env` is properly ignored by Git to prevent secrets leakage.
+
+### Tests Performed
+* Tested `git init` and verified repository status.
+* Verified `docker --version` (29.5.2) and `docker compose version` (v5.1.4).
+* Tested `python --version` (3.13.5) and `node --version` (v24.18.0) on host environment.
+* Verified that `.env` is uncommitted and completely ignored by Git.
+
+### Problems Encountered & Solutions
+* *Problem:* Attempting to run `docker compose up -d db` returned that Docker Desktop daemon was not running (`open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified`).
+* *Solution:* Documented the Docker daemon requirement. The host machine also possesses native Python 3.13 and Node 24 runtimes, providing flexibility for containerized or local development workflows.
+
+### Concepts Learned
+* Git hygiene and `.gitignore` rule precedence.
+* 12-Factor App methodology for environment variables.
+* Docker Compose service DNS resolution (`DB_HOST=db`).
+* Persistent named volumes for stateful databases.
+
+### Next Milestone
+* **Phase 2 — Backend Foundation** (Python virtual environment, Django project initialization, DRF setup, split settings architecture `base.py`/`development.py`, PostgreSQL database connection configuration).
+

@@ -63,3 +63,62 @@ print(f"Decimal Total: {total_decimal}")
 2. **What are the three components of a JSON Web Token (JWT), and which component prevents a user from tampering with their `user_id` inside the token?**
 3. **What is the difference between *Server State* and *Client State* in a React application? Give one concrete Expensus example for each.**
 4. **Why did we choose `on_delete=models.PROTECT` when deleting a `Category` that still has associated `Expense` records, instead of `models.CASCADE`?**
+
+---
+
+# Milestone 02: Phase 1 — Repository & Development Environment Setup
+
+## Concept
+1. **Git Repository Hygiene & `.gitignore` Architecture:** How Git tracks files using content-addressable storage (blobs, trees, commits), and why build artifacts (`dist/`, `__pycache__`), virtual environments (`.venv/`, `node_modules/`), and sensitive credentials (`.env`) must be strictly excluded.
+2. **The 12-Factor App: Configuration in the Environment:** The industry standard principle stating that configuration (database passwords, API keys, debug flags) must be injected via environment variables rather than hardcoded in source files.
+3. **Containerization & Orchestration (Docker & Docker Compose):**
+   * **Docker Image:** An immutable, snapshot blueprint of an operating system and software dependencies.
+   * **Docker Container:** A running, isolated instance of an image.
+   * **Docker Compose:** A declarative YAML tool that defines and runs multi-container Docker applications over an isolated internal network.
+   * **Docker Volumes:** Persistent host storage that outlives the lifecycle of containers, ensuring database rows are not lost when containers stop.
+
+---
+
+## Why
+* Without `.gitignore` and `.env.example`, developers risk leaking database passwords and private API keys to public repositories or causing merge conflicts over local binaries.
+* Without Docker / Docker Compose, every team member must manually install PostgreSQL, matching versions, locale collations, and ports on Windows/macOS/Linux, leading to "works on my machine" bugs.
+
+---
+
+## How
+* **Docker Compose Network:** Compose creates a default bridge network (`expensus_net`). Inside this network, containers resolve each other using service names as DNS hostnames (e.g., the backend connects to PostgreSQL using host `db` instead of `localhost` or an IP address).
+* **Volume Persistence:** The named volume `postgres_data` mounts into `/var/lib/postgresql/data` inside the PostgreSQL container. When the container is restarted or updated, data remains intact.
+
+---
+
+## Implementation
+* **Git Ignore Rules:** [.gitignore](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/.gitignore)
+* **Environment Configurations:** [.env.example](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/.env.example) and [.env](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/.env)
+* **Container Orchestration:** [docker-compose.yml](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/docker-compose.yml)
+* **Service Definitions:** [backend/Dockerfile](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/Dockerfile) and [frontend/Dockerfile](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/Dockerfile)
+* **Backend Dependency List:** [backend/requirements.txt](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/requirements.txt)
+
+---
+
+## Example
+### How Docker Compose Resolves Services via Internal DNS
+```yaml
+# In docker-compose.yml:
+services:
+  db:                    # <-- Service Name acts as internal DNS hostname
+    image: postgres:16-alpine
+    ...
+
+  backend:
+    environment:
+      - DB_HOST=db       # <-- Django resolves 'db' to the postgres container IP!
+```
+
+---
+
+## Questions to Test Your Understanding
+1. **Why must `.env` be included in `.gitignore`, while `.env.example` must be committed to Git?**
+2. **What is the difference between a Docker Image and a Docker Container?**
+3. **In `docker-compose.yml`, why does the backend container connect to PostgreSQL using `DB_HOST=db` instead of `DB_HOST=localhost`?**
+4. **What is a Docker persistent volume, and what would happen to our database data if we stopped our PostgreSQL container without one?**
+
