@@ -270,6 +270,54 @@ The Implementation Log tracks all milestones, files created/modified, architectu
 ### Next Milestone
 * **Phase 6 — Authentication & JWT Security** (User registration, JWT login, token refresh, token blacklist/logout, password change, and current user profile `/api/auth/me/`).
 
+---
+
+## Log Entry: Milestone 07 — Phase 6: Authentication & JWT Security
+
+* **Date:** 2026-08-28
+* **Milestone:** Phase 6 — Authentication & JWT Security
+* **Goal:** Implement complete JWT Authentication architecture (`/api/auth/`) with user signup, login with embedded profile data, token rotation, token revocation/blacklisting on logout, profile management (`/api/auth/me/`), password change, and end-to-end integration tests.
+
+### Files Created / Modified
+* `backend/config/settings/base.py` — Added `rest_framework_simplejwt.token_blacklist` to `INSTALLED_APPS` and enabled `BLACKLIST_AFTER_ROTATION = True`.
+* `backend/users/serializers.py` — Implemented `RegisterSerializer` (with password strength validation and duplicate email check), `CustomTokenObtainPairSerializer` (with embedded user metadata), `UserSerializer`, and `ChangePasswordSerializer`.
+* `backend/users/views.py` — Implemented `RegisterView` (returning user data and JWT tokens), `CustomTokenObtainPairView`, `UserProfileView`, `ChangePasswordView`, and `LogoutView` (blacklisting refresh tokens).
+* `backend/users/urls.py` — Configured routing for all authentication and user management endpoints.
+* `backend/users/tests.py` — Implemented 21 comprehensive integration tests covering registration edge cases, login validation, token refresh, logout blacklisting, profile updates, and password changes.
+
+### Changes Made
+* Created RESTful Authentication endpoints:
+  * `POST /api/auth/register/` (registers user and returns access + refresh tokens)
+  * `POST /api/auth/login/` (verifies credentials and returns access + refresh tokens with embedded user object)
+  * `POST /api/auth/refresh/` (exchanges valid refresh token for a new access token)
+  * `POST /api/auth/logout/` (blacklists refresh token to prevent further use)
+  * `GET /api/auth/me/` (retrieves current authenticated user profile)
+  * `PATCH /api/auth/me/` (updates profile fields `first_name` and `last_name`)
+  * `POST /api/auth/change-password/` (validates old password and sets new password)
+
+### Tests Performed
+* Ran full test suite (`python backend/manage.py test users categories expenses`) -> **All 57 tests passed (OK)** in 42.8s.
+* Verified duplicate email prevention (case-insensitive).
+* Verified password validation rules and mismatch detection.
+* Verified 401 Unauthorized on invalid login credentials.
+* Verified token refresh succeeds and blacklisted token refresh fails with 401.
+* Verified `/api/auth/me/` enforces read-only email and allows updating names.
+* Verified password update invalidates old password and succeeds with new password.
+
+### Problems Encountered & Solutions
+* *Problem:* When a user logs in, the React frontend typically needs both the JWT tokens and the user's basic profile details (e.g. name, email) to display the top navbar immediately without firing an extra `/api/auth/me/` request.
+* *Solution:* Overrode `TokenObtainPairSerializer.validate()` to inject `UserSerializer(self.user).data` directly into the login response.
+
+### Concepts Learned
+* Stateless JWT authentication mechanics (`Header.Payload.Signature`).
+* Refresh token rotation and server-side blacklisting.
+* Django password hashing and validator integration.
+* Secure profile and password change workflows.
+
+### Next Milestone
+* **Phase 7 — Analytics & Dashboard API** (Financial aggregation endpoints, monthly spending trends, category breakdown percentages, total spending stats, and integration tests).
+
+
 
 
 

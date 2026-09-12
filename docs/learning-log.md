@@ -400,4 +400,78 @@ class ExpenseSerializer(serializers.ModelSerializer):
 3. **Why must we explicitly validate in `validate_category_id` that `category.user == request.user` when saving an expense?**
 4. **How does `django-filter` translate `?start_date=2026-08-01&end_date=2026-08-31` into SQL WHERE conditions?**
 
+---
+
+# Milestone 07: Phase 6 — Authentication & JWT Security
+
+## Concept
+1. **Stateless JWT Architecture (`Header.Payload.Signature`):**
+   * Eliminates database session lookups on every incoming API request. Identity is cryptographically verified by decoding the signature using the server's private secret key.
+2. **Two-Tier Token Architecture & Rotation:**
+   * **Access Token (Short-lived, e.g., 30 min):** Transmitted via `Authorization: Bearer <access>` to authorize API requests.
+   * **Refresh Token (Long-lived, e.g., 7 days):** Exchanged at `/api/auth/refresh/` for a new access token when the access token expires.
+   * **Token Rotation & Blacklisting:** Every time a refresh token is used, a new refresh token is issued and the old refresh token is blacklisted (`rest_framework_simplejwt.token_blacklist`), mitigating replay and token theft risks.
+3. **Embedded User Profile in Login Response:**
+   * Customizing `TokenObtainPairSerializer` to return the authenticated `user` metadata (`id`, `email`, `first_name`, `last_name`, `full_name`) alongside the JWT tokens, reducing frontend startup roundtrips.
+4. **Explicit Logout via Server-Side Blacklisting:**
+   * Adding a `/api/auth/logout/` endpoint that adds the provided refresh token's unique identifier (`jti`) to the database blacklist table, preventing it from ever being refreshed again.
+5. **Secure Profile & Password Modification:**
+   * `/api/auth/me/` exposes `GET` and `PATCH` for user details while keeping `email` read-only.
+   * `/api/auth/change-password/` validates current password hash against PBKDF2 before applying new password complexity checks and persisting the new hash.
+
+---
+
+## Why
+* Authentication is the security backbone for all user-isolated data (categories, expenses, analytics).
+* Stateless JWT allows clean cross-origin communication between the React frontend and Django backend without cookie domain complications.
+* Refresh token blacklisting ensures that logging out actually invalidates active sessions on the server.
+
+---
+
+## How
+* `backend/users/serializers.py` defines `RegisterSerializer`, `CustomTokenObtainPairSerializer`, `UserSerializer`, and `ChangePasswordSerializer`.
+* `backend/users/views.py` implements `RegisterView`, `CustomTokenObtainPairView`, `UserProfileView`, `ChangePasswordView`, and `LogoutView`.
+* `backend/users/urls.py` binds routes to `/api/auth/`.
+* `backend/config/settings/base.py` enables `rest_framework_simplejwt.token_blacklist` and `BLACKLIST_AFTER_ROTATION = True`.
+
+---
+
+## Implementation
+* **Auth Serializers:** [backend/users/serializers.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/users/serializers.py)
+* **Auth Views:** [backend/users/views.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/users/views.py)
+* **URL Router:** [backend/users/urls.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/users/urls.py)
+* **Auth Test Suite:** [backend/users/tests.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/users/tests.py)
+
+---
+
+## Example
+### Refresh Token Blacklisting on Logout
+```python
+class LogoutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response(
+                {"detail": "Refresh token is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()  # Stores jti in token_blacklist_blacklistedtoken table
+            return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+        except TokenError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+```
+
+---
+
+## Questions to Test Your Understanding
+1. **Why is password hashing with PBKDF2/Argon2 one-way, and why do we never store plaintext passwords?**
+2. **What is the security risk of storing access tokens in localStorage, and how does short access token lifetime mitigate token leakage?**
+3. **What is the role of the `jti` (JWT ID) claim when implementing token blacklisting?**
+4. **Why did we customize `TokenObtainPairSerializer` to embed user details into the login payload?**
+
+
 
