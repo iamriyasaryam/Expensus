@@ -225,6 +225,52 @@ The Implementation Log tracks all milestones, files created/modified, architectu
 ### Next Milestone
 * **Phase 5 — Expense REST API** (Implementing Expense serializers, `ExpenseViewSet`, `django-filter` integration for date ranges/categories/methods, search, ordering, pagination, and API tests).
 
+---
+
+## Log Entry: Milestone 06 — Phase 5: Expense REST API
+
+* **Date:** 2026-08-28
+* **Milestone:** Phase 5 — Expense REST API
+* **Goal:** Implement the complete Expense REST API (`/api/expenses/`) with dual write/read serialization, `django-filter` integration, full-text searching, multi-field ordering, pagination, N+1 query elimination via `select_related`, and end-to-end integration testing.
+
+### Files Created / Modified
+* `backend/expenses/serializers.py` — Implemented `ExpenseSerializer` accepting `category_id` on write, embedding `CategorySerializer` nested object on read, and verifying category ownership.
+* `backend/expenses/filters.py` — Implemented `ExpenseFilter` supporting `start_date`, `end_date`, `month` (`YYYY-MM`), `category`, `payment_method`, `min_amount`, and `max_amount`.
+* `backend/expenses/views.py` — Implemented `ExpenseViewSet` with `.select_related('category')`, `DjangoFilterBackend`, `SearchFilter`, and `OrderingFilter`.
+* `backend/expenses/urls.py` — Configured DRF `DefaultRouter` registering `/api/expenses/`.
+* `backend/expenses/tests.py` — Added 15 comprehensive API integration tests with `APITestCase` covering authentication, CRUD actions, multi-tenancy, cross-user category rejection, filter query combinations, ordering, and pagination.
+
+### Changes Made
+* Created RESTful endpoints for Expense management:
+  * `GET /api/expenses/` (list user expenses with filters, search, pagination, and sorting)
+  * `POST /api/expenses/` (create new expense, auto-assigned to authenticated user)
+  * `GET /api/expenses/{id}/` (retrieve single expense)
+  * `PATCH /api/expenses/{id}/` (partially update expense)
+  * `DELETE /api/expenses/{id}/` (delete expense)
+* Resolved N+1 query vulnerability using `.select_related('category')`.
+* Prevented cross-tenant category hijacking by validating category ownership in `validate_category_id()`.
+
+### Tests Performed
+* Ran test suite (`python backend/manage.py test categories expenses`) -> **All 36 tests passed (OK)** in 29.6s.
+* Verified 401 Unauthorized for unauthenticated requests.
+* Verified 400 Bad Request when attempting to assign an expense to another user's category.
+* Verified filtering by month (`?month=2026-08`), date range (`?start_date=...&end_date=...`), category, amount ranges, and payment method.
+* Verified search on description and ordering by `-amount` and `expense_date`.
+
+### Problems Encountered & Solutions
+* *Problem:* When returning expenses, the frontend needs category details (name, icon, color) without making an extra network request, but sending a full category dictionary on write is cumbersome for clients.
+* *Solution:* Implemented write-only `category_id` (pointing to `source='category'`) and read-only nested `category = CategorySerializer(read_only=True)`.
+
+### Concepts Learned
+* DRF dual write/read serialization patterns.
+* SQL N+1 query problem and resolution via `.select_related()`.
+* Declarative query filtering with `django-filter`.
+* Object-level relational validation in serializers.
+
+### Next Milestone
+* **Phase 6 — Authentication & JWT Security** (User registration, JWT login, token refresh, token blacklist/logout, password change, and current user profile `/api/auth/me/`).
+
+
 
 
 

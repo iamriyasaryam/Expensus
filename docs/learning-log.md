@@ -321,3 +321,83 @@ class CategoryViewSet(viewsets.ModelViewSet):
 3. **What HTTP status code is returned when a category is successfully deleted, and what status code is returned if deletion is blocked by `ProtectedError`?**
 4. **Why does User A querying `GET /api/categories/99/` (which belongs to User B) receive `404 Not Found` instead of `200 OK`?**
 
+---
+
+# Milestone 06: Phase 5 — Expense REST API
+
+## Concept
+1. **Dual Serialization Pattern (Write-ID / Read-Nested):**
+   * On write (`POST`/`PATCH`): The client provides `category: 1` (integer foreign key ID) to minimize payload overhead.
+   * On read (`GET`): The API returns a nested `category: {"id": 1, "name": "Groceries", "icon": "shopping-cart", "color": "#10B981"}` so the UI has full display context without making secondary network requests.
+2. **Eliminating the N+1 Query Problem with `select_related`:**
+   * An N+1 query problem occurs when loading $N$ expenses executes 1 query to fetch the expenses, plus $N$ additional SQL queries to fetch each expense's foreign-key `category`.
+   * Using `.select_related('category')` performs an SQL `INNER JOIN` in a single query, reducing $N+1$ database roundtrips to exactly 1 roundtrip.
+3. **Multi-Faceted Filtering with `django-filter` (`FilterSet`):**
+   * Declarative query filtering supporting exact matches (`payment_method`, `category`), range lookups (`start_date`, `end_date`, `min_amount`, `max_amount`), and custom computed filters (`month="YYYY-MM"` filtering on year and month).
+4. **Zero-Trust Relational Validation:**
+   * When creating or updating an expense, the serializer checks `validate_category()` to verify that the specified category belongs to `request.user`, preventing users from assigning their expenses to another user's category.
+5. **Full-Featured List Mechanics (Pagination, Search, Ordering):**
+   * Configured `SearchFilter` (searches description), `OrderingFilter` (ordering by date, amount, created timestamp), and `PageNumberPagination` (default 20 records per page).
+
+---
+
+## Why
+* Expenses are the core transactional entity of the Expensus system.
+* Providing rich filtering, pagination, and sorting on the server avoids sending massive raw data dumps to the client and keeps queries fast and responsive.
+* Preventing N+1 queries is critical for database scalability as transaction volumes grow.
+
+---
+
+## How
+* `backend/expenses/serializers.py` defines `ExpenseSerializer` with `CategorySerializer(read_only=True)` and `PrimaryKeyRelatedField(write_only=True)`.
+* `backend/expenses/filters.py` defines `ExpenseFilter` inheriting from `django_filters.FilterSet`.
+* `backend/expenses/views.py` defines `ExpenseViewSet` configuring `filterset_class`, `search_fields`, `ordering_fields`, and `select_related('category')`.
+* `backend/expenses/urls.py` registers the ViewSet with `DefaultRouter`.
+
+---
+
+## Implementation
+* **Expense Serializer:** [backend/expenses/serializers.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/expenses/serializers.py)
+* **Expense Filter:** [backend/expenses/filters.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/expenses/filters.py)
+* **Expense ViewSet:** [backend/expenses/views.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/expenses/views.py)
+* **URL Router:** [backend/expenses/urls.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/expenses/urls.py)
+* **Expense API Tests:** [backend/expenses/tests.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/expenses/tests.py)
+
+---
+
+## Example
+### Expense Serializer with Dual Read/Write Category Handling & Validation
+```python
+class ExpenseSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        source='category',
+        write_only=True
+    )
+
+    class Meta:
+        model = Expense
+        fields = [
+            'id', 'category', 'category_id', 'amount',
+            'description', 'expense_date', 'payment_method',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate_category_id(self, value):
+        user = self.context['request'].user
+        if value.user != user:
+            raise serializers.ValidationError("Category does not exist or does not belong to you.")
+        return value
+```
+
+---
+
+## Questions to Test Your Understanding
+1. **What is the N+1 query problem, and how does `.select_related('category')` solve it?**
+2. **How does `ExpenseSerializer` allow writing with `category_id: 1` while returning `category: {id: 1, name: "Food", ...}` on read?**
+3. **Why must we explicitly validate in `validate_category_id` that `category.user == request.user` when saving an expense?**
+4. **How does `django-filter` translate `?start_date=2026-08-01&end_date=2026-08-31` into SQL WHERE conditions?**
+
+

@@ -1,7 +1,12 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import ExpenseViewSet
 
 app_name = 'expenses'
 
+router = DefaultRouter()
+router.register(r'', ExpenseViewSet, basename='expense')
+
 urlpatterns = [
-    # Expense endpoints will be wired in Phase 5
+    path('', include(router.urls)),
 ]
