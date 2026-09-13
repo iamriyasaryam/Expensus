@@ -551,6 +551,76 @@ for item in category_qs:
 3. **How does the service layer handle the scenario where a user has spent $0 in a particular month across the trailing 6-month window?**
 4. **Why is it advantageous to structure the financial aggregation logic in a dedicated `services.py` rather than directly in `views.py`?**
 
+---
+
+# Milestone 09: Phase 8 — Frontend Foundation & Design System
+
+## Concept
+1. **Separation of Server State & Client State:**
+   * **Server State (TanStack Query v5):** Remote, asynchronous, cacheable financial records (expenses, categories, dashboard analytics).
+   * **Client State (React Context / Local State):** UI view models, active filters, form inputs, modal dialog visibility, authenticated token persistence.
+2. **Axios Centralized Interceptor & Refresh Token Queue:**
+   * **Request Interceptor:** Dynamically reads `access_token` from `localStorage` and injects `Authorization: Bearer <token>`.
+   * **Response Interceptor:** Catches `401 Unauthorized`, pauses incoming requests in a Promise queue (`failedQueue`), exchanges `refresh_token` at `/api/auth/refresh/` for a fresh access token, and retries all pending requests seamlessly.
+3. **Design System & Glassmorphism Token Architecture:**
+   * Defined consistent HSL design tokens, dark mode palette, Inter typography, and glassmorphic card utilities (`glass-panel`, `glass-panel-glow`) in `tailwind.config.js` and `src/index.css`.
+4. **Declarative Route Guarding with React Router v6:**
+   * `ProtectedRoute`: Evaluates `useAuth()` status. If unauthenticated, saves current location and redirects to `/login`.
+   * `PublicRoute`: If authenticated, redirects immediately to `/dashboard`.
+5. **Component Primitives & Application Shell:**
+   * Developed accessible, reusable UI building blocks (`Button`, `Card`, `Input`, `Badge`, `LoadingSpinner`) and full application layout (`Navbar`, `Sidebar`, `MainLayout`).
+
+---
+
+## Why
+* A solid architectural foundation prevents messy state bugs and spaghetti code as domain features scale.
+* Centralized Axios interceptors eliminate repetitive token management boilerplate from individual page components.
+* Design-token consistency guarantees a polished, responsive user experience.
+
+---
+
+## How
+* `frontend/package.json` configures Vite, React 18, TypeScript, Tailwind CSS, TanStack Query, Axios, and Lucide icons.
+* `frontend/src/services/api.ts` configures interceptors and token refresh queues.
+* `frontend/src/features/auth/AuthContext.tsx` manages login, registration, logout, and token hydration.
+* `frontend/src/app/AppRouter.tsx` wires public and protected route trees.
+
+---
+
+## Implementation
+* **Vite & Tailwind Config:** [frontend/vite.config.ts](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/vite.config.ts), [tailwind.config.js](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/tailwind.config.js), [index.css](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/index.css)
+* **TypeScript Types:** [frontend/src/types/](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/types/)
+* **Axios API Service:** [frontend/src/services/api.ts](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/services/api.ts) & [authService.ts](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/services/authService.ts)
+* **Auth Context:** [frontend/src/features/auth/AuthContext.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/auth/AuthContext.tsx)
+* **Layout & UI Primitives:** [frontend/src/components/](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/components/)
+* **Router & Pages:** [frontend/src/app/AppRouter.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/app/AppRouter.tsx), [DashboardPage.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/pages/DashboardPage.tsx), [LoginPage.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/pages/LoginPage.tsx), [RegisterPage.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/pages/RegisterPage.tsx)
+
+---
+
+## Example
+### Axios Token Refresh Queue Mechanism
+```typescript
+if (isRefreshing) {
+  return new Promise((resolve, reject) => {
+    failedQueue.push({ resolve, reject });
+  }).then((token) => {
+    if (originalRequest.headers) {
+      originalRequest.headers.Authorization = `Bearer ${token}`;
+    }
+    return api(originalRequest);
+  });
+}
+```
+
+---
+
+## Questions to Test Your Understanding
+1. **What is the difference between Server State and Client State in a modern React application?**
+2. **How does the Axios response interceptor prevent infinite 401 request loops?**
+3. **Why do we queue pending HTTP requests in `failedQueue` while a token refresh is in flight?**
+4. **How does `ProtectedRoute` preserve the user's intended navigation URL after they log in?**
+
+
 
 
 

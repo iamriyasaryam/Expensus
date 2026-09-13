@@ -360,6 +360,50 @@ The Implementation Log tracks all milestones, files created/modified, architectu
 ### Next Milestone
 * **Phase 8 — Frontend Foundation & Design System** (Vite + React + TypeScript setup, Tailwind CSS / shadcn-ui token configuration, Axios API client with JWT interceptors, auth state management with Zustand).
 
+---
+
+## Log Entry: Milestone 09 — Phase 8: Frontend Foundation & Design System
+
+* **Date:** 2026-08-28
+* **Milestone:** Phase 8 — Frontend Foundation & Design System
+* **Goal:** Initialize React 18 + TypeScript + Vite frontend with Tailwind CSS design tokens, Axios JWT interceptors, auto-refresh token queues, AuthContext state management, application shell (Navbar, Sidebar, MainLayout), and React Router v6 guarded route tree.
+
+### Files Created / Modified
+* `frontend/package.json` — Configured dependencies (React, Vite, TypeScript, Tailwind, TanStack Query, Axios, Lucide).
+* `frontend/vite.config.ts` — Configured Vite dev server proxying `/api` to Django backend `http://127.0.0.1:8000`.
+* `frontend/tailwind.config.js` & `src/index.css` — Configured dark glassmorphic design tokens, Inter font, and layout utilities.
+* `frontend/src/types/` — Structured TypeScript contracts for Auth, Category, Expense, Analytics, and API pagination.
+* `frontend/src/services/api.ts` & `authService.ts` — Implemented Axios client with bearer token injection, 401 interception, and concurrent refresh queueing.
+* `frontend/src/features/auth/AuthContext.tsx` & `useAuth.ts` — Built session management with localStorage token persistence.
+* `frontend/src/components/ui/` — Implemented `Button`, `Card`, `Input`, `Badge`, and `LoadingSpinner`.
+* `frontend/src/components/layout/` — Implemented `Navbar`, `Sidebar`, and `MainLayout`.
+* `frontend/src/app/AppRouter.tsx` — Built declarative routing with `ProtectedRoute` and `PublicRoute`.
+* `frontend/src/pages/` — Implemented `LoginPage`, `RegisterPage`, `DashboardPage`, `ExpensesPage`, `CategoriesPage`, and `ProfilePage`.
+
+### Changes Made
+* Successfully built full frontend client architecture.
+* Connected client-side router and state to Django REST APIs.
+* Tested and confirmed production build (`npm run build`) generates clean distribution bundle without type errors.
+
+### Tests Performed
+* TypeScript compilation & Vite bundle build (`npm run build`) -> **100% Passed (built in 33.7s)**.
+* Live server response test: `Invoke-WebRequest -Uri "http://localhost:5173/"` -> **HTTP 200 OK**.
+* Live API integration test: Registered `riya@expensus.local`, authenticated via JWT login, and fetched live dashboard aggregations with Bearer access token -> **HTTP 200 OK**.
+
+### Problems Encountered & Solutions
+* *Problem:* When multiple API calls fail simultaneously with 401, multiple duplicate refresh requests would fire.
+* *Solution:* Implemented an `isRefreshing` lock with a `failedQueue` array to pause and batch retry all requests once the fresh access token is acquired.
+
+### Concepts Learned
+* Separation of Server State (TanStack Query) vs Client State (React Context).
+* Token refresh queuing and Axios interceptor mechanics.
+* Design system tokenization and glassmorphism styling in Tailwind CSS.
+* Declarative route guards with React Router v6.
+
+### Next Milestone
+* **Phase 9 — Frontend Authentication Flow** (Enhanced form validations, error tooltips, session persistence feedback, and animated transitions).
+
+
 
 
 
