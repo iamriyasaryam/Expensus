@@ -473,5 +473,84 @@ class LogoutView(APIView):
 3. **What is the role of the `jti` (JWT ID) claim when implementing token blacklisting?**
 4. **Why did we customize `TokenObtainPairSerializer` to embed user details into the login payload?**
 
+---
+
+# Milestone 08: Phase 7 — Analytics & Dashboard API
+
+## Concept
+1. **Server-Side Financial Aggregations (`Sum`, `Count`, `Coalesce`):**
+   * Computing multi-metric totals (`total_spending_all_time`, `total_spending_month`, `total_spending_today`, `expense_count_month`) directly in the PostgreSQL engine rather than pulling raw transaction arrays to client memory.
+   * `Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())` guarantees that queries on zero-expense months safely evaluate to numeric `Decimal('0.00')` rather than SQL `NULL` (`None`).
+2. **Relational Group By & Percentage Distribution:**
+   * Combining `.values('category__id', 'category__name', ...)` with `.annotate(total_amount=Sum('amount'))` to generate an indexed category spending distribution.
+   * Applying zero-division guards when calculating spending percentage:
+     $$\text{percentage} = \begin{cases} \text{round}\left(\frac{\text{cat\_total}}{\text{month\_total}} \times 100, 2\right) & \text{if } \text{month\_total} > 0 \\ 0.00 & \text{otherwise} \end{cases}$$
+3. **Temporal Grouping & Trailing Window (`TruncMonth`):**
+   * Truncating date stamps to month boundaries to assemble trailing 6-month historical spending curves.
+   * Chronologically generating all 6 month keys (`['YYYY-MM', ...]`) and mapping SQL query results to ensure empty months are populated with `0.00` rather than missing from chart axes.
+4. **Clean Service Layer Architecture (`AnalyticsService`):**
+   * Isolating complex ORM aggregation pipelines and temporal algorithms inside a dedicated service layer, keeping API views clean and lightweight.
+
+---
+
+## Why
+* Real-time financial dashboards are the primary visual feature of Expensus.
+* Calculating sums, counts, and category proportions on the database server minimizes network bandwidth and avoids client-side compute lag.
+* A single cohesive endpoint (`/api/analytics/dashboard/`) eliminates 4+ independent HTTP requests on dashboard load.
+
+---
+
+## How
+* `backend/analytics/services.py` defines `AnalyticsService.get_dashboard_data(user, month_str)`.
+* `backend/analytics/serializers.py` validates and serializes the structured dashboard payload.
+* `backend/analytics/views.py` exposes `DashboardAnalyticsView` with `IsAuthenticated`.
+* `backend/analytics/urls.py` routes `/api/analytics/dashboard/`.
+
+---
+
+## Implementation
+* **Analytics Service:** [backend/analytics/services.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/analytics/services.py)
+* **Analytics Serializers:** [backend/analytics/serializers.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/analytics/serializers.py)
+* **Analytics View:** [backend/analytics/views.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/analytics/views.py)
+* **URL Router:** [backend/analytics/urls.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/analytics/urls.py)
+* **Analytics Tests:** [backend/analytics/tests.py](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/backend/analytics/tests.py)
+
+---
+
+## Example
+### Category Breakdown Aggregation with Decimal Precision
+```python
+category_qs = Expense.objects.filter(
+    user=user,
+    expense_date__range=(month_start, month_end)
+).values(
+    'category__id', 'category__name', 'category__icon', 'category__color'
+).annotate(
+    total_amount=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
+).order_by('-total_amount')
+
+category_breakdown = []
+for item in category_qs:
+    cat_total = item['total_amount']
+    percentage = round((cat_total / total_spending_month) * Decimal('100.00'), 2) if total_spending_month > 0 else Decimal('0.00')
+    category_breakdown.append({
+        'category_id': item['category__id'],
+        'category_name': item['category__name'],
+        'icon': item['category__icon'] or '',
+        'color': item['category__color'] or '#6B7280',
+        'total_amount': str(cat_total),
+        'percentage': float(percentage),
+    })
+```
+
+---
+
+## Questions to Test Your Understanding
+1. **Why do we wrap `Sum('amount')` in `Coalesce(..., Decimal('0.00'))` in Django ORM aggregates?**
+2. **What does `TruncMonth('expense_date')` do, and how does it assist in generating multi-month financial charts?**
+3. **How does the service layer handle the scenario where a user has spent $0 in a particular month across the trailing 6-month window?**
+4. **Why is it advantageous to structure the financial aggregation logic in a dedicated `services.py` rather than directly in `views.py`?**
+
+
 
 

@@ -1,7 +1,8 @@
 from django.urls import path
+from . import views
 
 app_name = 'analytics'
 
 urlpatterns = [
-    # Dashboard analytics endpoint will be wired in Phase 9
+    path('dashboard/', views.DashboardAnalyticsView.as_view(), name='dashboard'),
 ]
