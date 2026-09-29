@@ -477,6 +477,47 @@ The Implementation Log tracks all milestones, files created/modified, architectu
 ### Next Milestone
 * **Phase 11 — Expense Management UI** (Transaction ledger table, search, category/method/date filters, amount range inputs, pagination controls, and add/edit expense modals).
 
+---
+
+## Log Entry: Milestone 12 — Phase 11: Expense Management UI
+
+* **Date:** 2026-08-28
+* **Milestone:** Phase 11 — Expense Management UI
+* **Goal:** Implement the complete Expense Management interface (`/expenses`) with server-side paginated ledger table, multi-faceted filtering (memo search, category dropdown, payment method, date range), Create/Edit modals with decimal currency validation, and confirmation deletion dialogs.
+
+### Files Created / Modified
+* `frontend/src/services/expenseService.ts` — Built REST API client for expense CRUD operations and filter parameter serialization.
+* `frontend/src/features/expenses/useExpenses.ts` — Built TanStack Query custom hooks (`useExpenses`, `useCreateExpense`, `useUpdateExpense`, `useDeleteExpense`) with `keepPreviousData` and cross-domain cache invalidation (`['expenses']`, `['dashboard']`).
+* `frontend/src/features/expenses/ExpenseFilterBar.tsx` — Built comprehensive multi-filter control bar with live search, category select, payment method, date ranges, and clear filters.
+* `frontend/src/features/expenses/ExpenseTable.tsx` — Built responsive transaction ledger table with category badges, formatted currency values, payment method indicators, action buttons, loading skeletons, and pagination controls.
+* `frontend/src/features/expenses/ExpenseModal.tsx` — Built dual-purpose Create and Edit modal with real-time decimal validation, category select, date picker, and memo input.
+* `frontend/src/features/expenses/DeleteExpenseDialog.tsx` — Built expense deletion confirmation dialog.
+* `frontend/src/pages/ExpensesPage.tsx` — Assembled the complete expense ledger page with toast alerts and filter state orchestration.
+
+### Changes Made
+* Developed a complete transactional management interface for expenses.
+* Ensured flicker-free pagination navigation via TanStack Query's `placeholderData: keepPreviousData`.
+* Guaranteed strict positive decimal validation on currency inputs prior to API submission.
+* Synchronized both expense table queries and dashboard analytics on create/edit/delete mutations.
+
+### Tests Performed
+* TypeScript compilation & Vite production build (`npm run build`) -> **100% Passed (built in 3.33s)**.
+* Backend test suite (`python backend/manage.py test users categories expenses analytics`) -> **All 63 tests passing**.
+
+### Problems Encountered & Solutions
+* *Problem:* Fast page switching during pagination resulted in table flickering and layout jumping.
+* *Solution:* Configured `placeholderData: keepPreviousData` in `useExpenses` hook to retain previous page rows until new data loads.
+
+### Concepts Learned
+* Server-side paginated queries with TanStack Query.
+* Synchronizing atomic multi-filter state and page index resets.
+* Monetary decimal validation in client forms.
+* Cross-domain query invalidation across separate feature modules.
+
+### Next Milestone
+* **Phase 12 — Analytics Dashboard UI** (Interactive spending summary cards, trailing 6-month spending chart, category distribution donut, and recent activity ledger).
+
+
 
 
 

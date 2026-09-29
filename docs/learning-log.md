@@ -750,6 +750,86 @@ try {
 3. **What error code is returned by Django when deleting a category with attached expenses, and how does the UI react to it?**
 4. **Why is it beneficial to separate network fetching (`categoryService.ts`) from React hook state (`useCategories.ts`)?**
 
+---
+
+# Milestone 12: Phase 11 — Expense Management UI
+
+## Concept
+1. **Server-Side Paginated State Management:**
+   * Querying paginated API endpoints (`/api/expenses/?page=1&page_size=10`) using TanStack Query v5.
+   * Applying `placeholderData: keepPreviousData` to ensure previous table rows remain visible while fetching the next page, eliminating UI layout shift and flickering.
+2. **Multi-Faceted Query Synchronization:**
+   * Synchronizing multiple filter criteria (text search on description, category selection, payment method choices, date range boundaries) into an atomic filter state.
+   * Automatically resetting current page to `page = 1` whenever any filter condition changes to avoid out-of-bounds page requests.
+3. **Dual Create & Edit Modal Workflows:**
+   * Modal dialog that dynamically binds to either empty state (creation) or an existing `Expense` model instance (editing).
+   * Strict financial decimal input handling, validating that `amount > 0` and converting strings to numeric representations before submitting to the backend.
+4. **Cross-Domain Cache Invalidation:**
+   * When any expense mutation (create, update, delete) resolves successfully, the query client invalidates both `['expenses']` and `['dashboard']` caches, ensuring both the ledger and analytics dashboards update without requiring full-page reloads.
+
+---
+
+## Why
+* A financial ledger is the central workflow of an expense tracker; users need rapid search, filtering, and pagination without lag.
+* Server-driven pagination ensures consistent application performance whether the user has 10 or 10,000 recorded expenses.
+* Seamless cross-domain cache invalidation guarantees financial consistency across the entire user experience.
+
+---
+
+## How
+* `frontend/src/services/expenseService.ts` handles REST network requests with query parameters.
+* `frontend/src/features/expenses/useExpenses.ts` encapsulates TanStack Query hooks with automatic cache invalidations.
+* `frontend/src/features/expenses/ExpenseFilterBar.tsx` renders search inputs, category selectors, payment filters, and date pickers.
+* `frontend/src/features/expenses/ExpenseTable.tsx` displays category badges, formatted currency amounts, payment method tags, action buttons, and pagination footers.
+* `frontend/src/features/expenses/ExpenseModal.tsx` provides form inputs with real-time decimal validation.
+* `frontend/src/features/expenses/DeleteExpenseDialog.tsx` handles expense removal confirmation.
+* `frontend/src/pages/ExpensesPage.tsx` integrates the table, filters, modals, and Toast alerts.
+
+---
+
+## Implementation
+* **Expense Service:** [frontend/src/services/expenseService.ts](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/services/expenseService.ts)
+* **Expense Query Hooks:** [frontend/src/features/expenses/useExpenses.ts](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/expenses/useExpenses.ts)
+* **Filter Bar Component:** [frontend/src/features/expenses/ExpenseFilterBar.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/expenses/ExpenseFilterBar.tsx)
+* **Expense Table Component:** [frontend/src/features/expenses/ExpenseTable.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/expenses/ExpenseTable.tsx)
+* **Expense Modals:** [frontend/src/features/expenses/ExpenseModal.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/expenses/ExpenseModal.tsx), [DeleteExpenseDialog.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/expenses/DeleteExpenseDialog.tsx)
+* **Expenses Page:** [frontend/src/pages/ExpensesPage.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/pages/ExpensesPage.tsx)
+
+---
+
+## Example
+### Paginated Expense Query with TanStack Query v5
+```typescript
+export function useExpenses(params: ExpenseFilterParams = {}) {
+  return useQuery({
+    queryKey: ['expenses', params],
+    queryFn: () => getExpenses(params),
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+export function useCreateExpense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ExpenseCreatePayload) => createExpense(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+```
+
+---
+
+## Questions to Test Your Understanding
+1. **Why do we pass `placeholderData: keepPreviousData` when querying paginated data in TanStack Query?**
+2. **Why must we reset the active page number to 1 whenever a filter parameter (e.g. search query or category) changes?**
+3. **Why do expense mutation hooks invalidate both `['expenses']` and `['dashboard']` query keys?**
+4. **How does the `ExpenseModal` handle the distinction between creating a new expense and editing an existing expense?**
+
+
 
 
 
