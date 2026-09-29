@@ -438,6 +438,46 @@ The Implementation Log tracks all milestones, files created/modified, architectu
 ### Next Milestone
 * **Phase 10 — Category Management UI** (Category cards grid, color/icon picker, add/edit/delete modals, and `ProtectedError` cascade handling).
 
+---
+
+## Log Entry: Milestone 11 — Phase 10: Category Management UI
+
+* **Date:** 2026-08-28
+* **Milestone:** Phase 10 — Category Management UI
+* **Goal:** Implement the complete interactive Category Management interface (`/categories`) with search filtering, Lucide dynamic icon selector, preset color swatches, Create/Edit modals with live badge previewing, and cascade deletion guards handling `ProtectedError`.
+
+### Files Created / Modified
+* `frontend/src/services/categoryService.ts` — Built REST API client methods for category CRUD operations.
+* `frontend/src/features/categories/categoryIcons.tsx` — Built Lucide icon registry and preset color options with dynamic `CategoryIcon` component.
+* `frontend/src/features/categories/useCategories.ts` — Built TanStack Query custom hooks (`useCategories`, `useCreateCategory`, `useUpdateCategory`, `useDeleteCategory`) with automatic cache invalidation.
+* `frontend/src/features/categories/CategoryCard.tsx` — Built category item card displaying icon badge, name, creation date, and edit/delete actions.
+* `frontend/src/features/categories/CategoryModal.tsx` — Built Create/Edit modal dialog with real-time badge preview, color selector, and icon grid.
+* `frontend/src/features/categories/DeleteCategoryDialog.tsx` — Built deletion confirmation dialog with dedicated interception for `category_protected` 400 responses.
+* `frontend/src/pages/CategoriesPage.tsx` — Assembled category search, count indicator, responsive grid, empty states, and modal dialogs.
+
+### Changes Made
+* Enabled seamless category creation and modification in the web frontend.
+* Integrated responsive icon and color customization.
+* Protected against broken UX when attempting to delete categories referencing active expenses.
+
+### Tests Performed
+* TypeScript compilation & Vite production build (`npm run build`) -> **100% Passed (built in 3.36s)**.
+* Backend test suite -> **All 63 tests passing**.
+
+### Problems Encountered & Solutions
+* *Problem:* Deleting a category with active transactions would raise a raw 400 error.
+* *Solution:* Caught `err.response.data.code === 'category_protected'` in `DeleteCategoryDialog` to display a dedicated database-protection alert banner.
+
+### Concepts Learned
+* TanStack Query cache invalidation pipelines.
+* Dynamic SVG icon mapping and rendering.
+* Modal state encapsulation with React and TypeScript.
+* Database constraint error interception in frontend dialogs.
+
+### Next Milestone
+* **Phase 11 — Expense Management UI** (Transaction ledger table, search, category/method/date filters, amount range inputs, pagination controls, and add/edit expense modals).
+
+
 
 
 

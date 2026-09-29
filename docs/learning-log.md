@@ -685,6 +685,72 @@ if (isRefreshing) {
 3. **Why do we keep the `email` field read-only in `ProfilePage`?**
 4. **How does `updateUser` in `AuthContext` keep the top Navbar avatar synchronized when a user updates their first name?**
 
+---
+
+# Milestone 11: Phase 10 — Category Management UI
+
+## Concept
+1. **Server State Caching & Optimistic Invalidation with TanStack Query:**
+   * Querying categories using `useQuery(['categories'])` with stale-time caching.
+   * Applying `useMutation` hooks for category creation, editing, and deletion that automatically trigger `queryClient.invalidateQueries({ queryKey: ['categories'] })` and `queryClient.invalidateQueries({ queryKey: ['dashboard'] })`, re-fetching fresh state without page reloads.
+2. **Dynamic Lucide Icon Registry:**
+   * Storing string identifiers in the database (`'shopping-cart'`, `'utensils'`, `'home'`, `'car'`, etc.) and dynamically mapping them to React Lucide components with color badges via [categoryIcons.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/categories/categoryIcons.tsx).
+3. **Modal Dialog Workflow & Form State Management:**
+   * Modal dialog supporting dual Create and Edit modes with live badge previewing, customizable color palettes, and icon grid selection.
+4. **Cascade Deletion Interception (`ProtectedError`):**
+   * Intercepting backend HTTP 400 responses with `code: "category_protected"` and rendering a dedicated explanation alert informing the user that active expenses must first be deleted or reassigned.
+
+---
+
+## Why
+* Spending categories are the organizational foundation for transaction accounting and analytics.
+* Handling relational database errors gracefully in the UI prevents application crashes and educates users on data integrity rules.
+
+---
+
+## How
+* `frontend/src/services/categoryService.ts` handles REST network calls.
+* `frontend/src/features/categories/useCategories.ts` encapsulates TanStack Query hooks.
+* `frontend/src/features/categories/CategoryModal.tsx` provides interactive creation and editing with icon/color pickers.
+* `frontend/src/features/categories/DeleteCategoryDialog.tsx` handles deletion confirmation and cascade protection alerts.
+* `frontend/src/pages/CategoriesPage.tsx` brings the category grid, search filter, and action modals together.
+
+---
+
+## Implementation
+* **Category Service:** [frontend/src/services/categoryService.ts](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/services/categoryService.ts)
+* **Category Query Hooks:** [frontend/src/features/categories/useCategories.ts](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/categories/useCategories.ts)
+* **Icon & Color Registry:** [frontend/src/features/categories/categoryIcons.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/categories/categoryIcons.tsx)
+* **Category Card & Modals:** [frontend/src/features/categories/CategoryCard.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/categories/CategoryCard.tsx), [CategoryModal.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/categories/CategoryModal.tsx), [DeleteCategoryDialog.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/features/categories/DeleteCategoryDialog.tsx)
+* **Categories Page:** [frontend/src/pages/CategoriesPage.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/pages/CategoriesPage.tsx)
+
+---
+
+## Example
+### Intercepting `category_protected` Cascade Error in Delete Dialog
+```tsx
+try {
+  await onConfirm(category.id);
+  onClose();
+} catch (err: any) {
+  if (err.response?.data?.code === 'category_protected') {
+    setErrorDetail({
+      code: 'category_protected',
+      message: 'This category cannot be deleted because active expenses are assigned to it. To delete this category, please delete or reassign its expenses first.',
+    });
+  }
+}
+```
+
+---
+
+## Questions to Test Your Understanding
+1. **Why does `useCreateCategory` call `queryClient.invalidateQueries({ queryKey: ['categories'] })` on success?**
+2. **How does `CategoryIcon` safely handle unknown or null icon names stored in the database?**
+3. **What error code is returned by Django when deleting a category with attached expenses, and how does the UI react to it?**
+4. **Why is it beneficial to separate network fetching (`categoryService.ts`) from React hook state (`useCategories.ts`)?**
+
+
 
 
 
