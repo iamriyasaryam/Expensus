@@ -403,6 +403,42 @@ The Implementation Log tracks all milestones, files created/modified, architectu
 ### Next Milestone
 * **Phase 9 — Frontend Authentication Flow** (Enhanced form validations, error tooltips, session persistence feedback, and animated transitions).
 
+---
+
+## Log Entry: Milestone 10 — Phase 9: Frontend Authentication Flow
+
+* **Date:** 2026-08-28
+* **Milestone:** Phase 9 — Frontend Authentication Flow
+* **Goal:** Enhance authentication and user management UI with client-side form validation, password visibility toggles, dynamic password strength checklists, timed Toast alerts, and interactive profile/password updating.
+
+### Files Created / Modified
+* `frontend/src/components/ui/Toast.tsx` — Built auto-dismissing animated Toast notification component with success/error/info styling.
+* `frontend/src/pages/LoginPage.tsx` — Added password visibility toggle, regex email validation, and refined error banners.
+* `frontend/src/pages/RegisterPage.tsx` — Added dual password visibility toggles, real-time password length ($\ge 8$) and match validation checklists.
+* `frontend/src/pages/ProfilePage.tsx` — Integrated interactive Toast feedback for name updates and password changes, with visibility toggles for old and new passwords.
+
+### Changes Made
+* Delivered comprehensive client-side form verification preventing unnecessary failed API calls.
+* Provided clear visual indicators assisting users with password requirements.
+* Wired instant feedback for profile and password update mutations.
+
+### Tests Performed
+* TypeScript compilation & Vite build (`npm run build`) -> **100% Passed (built in 30.9s)**.
+* Backend test suite -> **All 63 tests passing**.
+
+### Problems Encountered & Solutions
+* *Problem:* Users could submit invalid email formats or mismatched passwords without immediate feedback until a backend roundtrip failed.
+* *Solution:* Implemented client-side pre-flight regex and length checks alongside real-time checklist indicators.
+
+### Concepts Learned
+* Client-side validation strategies and UX feedback loops.
+* Accessible password reveal toggles.
+* Ephemeral notification management and cleanup with React hooks.
+
+### Next Milestone
+* **Phase 10 — Category Management UI** (Category cards grid, color/icon picker, add/edit/delete modals, and `ProtectedError` cascade handling).
+
+
 
 
 

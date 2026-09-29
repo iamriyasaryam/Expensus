@@ -4,7 +4,7 @@ import { useAuth } from '../features/auth/useAuth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { Sparkles, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, Eye, EyeOff, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
@@ -15,20 +15,32 @@ export const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword2, setShowPassword2] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Real-time checks
+  const isLengthValid = password.length >= 8;
+  const isMatchValid = password.length > 0 && password === password2;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (password !== password2) {
-      setError('Passwords do not match.');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address.');
       return;
     }
 
-    if (password.length < 8) {
+    if (!isLengthValid) {
       setError('Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (password !== password2) {
+      setError('Passwords do not match.');
       return;
     }
 
@@ -36,11 +48,11 @@ export const RegisterPage: React.FC = () => {
 
     try {
       await register({
-        email,
+        email: email.trim(),
         password,
         password2,
-        first_name: firstName,
-        last_name: lastName,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
       });
       navigate('/dashboard');
     } catch (err: any) {
@@ -81,7 +93,7 @@ export const RegisterPage: React.FC = () => {
 
             <CardContent className="space-y-3.5">
               {error && (
-                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5 animate-fadeIn">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{error}</span>
                 </div>
@@ -115,23 +127,72 @@ export const RegisterPage: React.FC = () => {
 
               <Input
                 label="Password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="At least 8 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 leftIcon={<Lock className="w-4 h-4" />}
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-slate-400 hover:text-slate-200 focus:outline-none transition-colors"
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                }
                 required
               />
 
               <Input
                 label="Confirm Password"
-                type="password"
+                type={showPassword2 ? 'text' : 'password'}
                 placeholder="Re-enter password"
                 value={password2}
                 onChange={(e) => setPassword2(e.target.value)}
                 leftIcon={<Lock className="w-4 h-4" />}
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword2(!showPassword2)}
+                    className="text-slate-400 hover:text-slate-200 focus:outline-none transition-colors"
+                    title={showPassword2 ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword2 ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                }
                 required
               />
+
+              {/* Password strength real-time indicators */}
+              {password.length > 0 && (
+                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    {isLengthValid ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5 text-slate-500" />
+                    )}
+                    <span className={isLengthValid ? 'text-emerald-400' : 'text-slate-400'}>
+                      At least 8 characters
+                    </span>
+                  </div>
+
+                  {password2.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      {isMatchValid ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                      )}
+                      <span className={isMatchValid ? 'text-emerald-400' : 'text-rose-400'}>
+                        {isMatchValid ? 'Passwords match' : 'Passwords do not match'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
 
             <CardFooter className="flex flex-col space-y-4">

@@ -620,6 +620,72 @@ if (isRefreshing) {
 3. **Why do we queue pending HTTP requests in `failedQueue` while a token refresh is in flight?**
 4. **How does `ProtectedRoute` preserve the user's intended navigation URL after they log in?**
 
+---
+
+# Milestone 10: Phase 9 — Frontend Authentication Flow
+
+## Concept
+1. **Client-Side Pre-Flight Validation:**
+   * Validating form inputs (RFC-compliant email format regex, password minimum length $\ge 8$, password match) prior to issuing network requests.
+   * Instant visual feedback reduces unnecessary server load and improves UX.
+2. **Password Visibility Mechanics & Accessible Toggle Controls:**
+   * Implementing dynamic input `type="text"` vs `type="password"` state switching with `Eye` and `EyeOff` icons.
+3. **Interactive Notification Feedback (`Toast`):**
+   * Auto-dismissing animated alerts communicating mutation status (success, error) for profile changes and password updates.
+4. **Secure Profile & Credential Management:**
+   * Exposing `/api/auth/me/` updates with synchronized UI header state and cryptographic password rotation via `/api/auth/change-password/`.
+
+---
+
+## Why
+* Authentication forms are the first user touchpoint; clear visual error handling and password aids prevent signup churn.
+* Providing immediate toast feedback on credential changes assures users of account security.
+
+---
+
+## How
+* `frontend/src/components/ui/Toast.tsx` implements timed notification badges.
+* `frontend/src/pages/LoginPage.tsx` and `RegisterPage.tsx` incorporate real-time password criteria and visibility toggles.
+* `frontend/src/pages/ProfilePage.tsx` integrates personal details editing and password update flows with toast alerts.
+
+---
+
+## Implementation
+* **Toast Notification Component:** [frontend/src/components/ui/Toast.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/components/ui/Toast.tsx)
+* **Login Form Flow:** [frontend/src/pages/LoginPage.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/pages/LoginPage.tsx)
+* **Registration Form Flow:** [frontend/src/pages/RegisterPage.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/pages/RegisterPage.tsx)
+* **Profile & Password Manager:** [frontend/src/pages/ProfilePage.tsx](file:///c:/Users/Riya%20Saryam/OneDrive/Desktop/Expensus/frontend/src/pages/ProfilePage.tsx)
+
+---
+
+## Example
+### Real-Time Password Match & Length Validation Indicators
+```tsx
+{password.length > 0 && (
+  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5 text-xs">
+    <div className="flex items-center gap-2">
+      {isLengthValid ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <XCircle className="w-3.5 h-3.5 text-slate-500" />}
+      <span className={isLengthValid ? 'text-emerald-400' : 'text-slate-400'}>At least 8 characters</span>
+    </div>
+    {password2.length > 0 && (
+      <div className="flex items-center gap-2">
+        {isMatchValid ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <XCircle className="w-3.5 h-3.5 text-rose-400" />}
+        <span className={isMatchValid ? 'text-emerald-400' : 'text-rose-400'}>{isMatchValid ? 'Passwords match' : 'Passwords do not match'}</span>
+      </div>
+    )}
+  </div>
+)}
+```
+
+---
+
+## Questions to Test Your Understanding
+1. **Why is it essential to perform password validation on both the frontend and the backend?**
+2. **How does the `Toast` component ensure that background timers are cleaned up if the component unmounts?**
+3. **Why do we keep the `email` field read-only in `ProfilePage`?**
+4. **How does `updateUser` in `AuthContext` keep the top Navbar avatar synchronized when a user updates their first name?**
+
+
 
 
 
